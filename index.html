@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atablecarte</title>
+<meta name="description" content="Digital loyalty cards for independent restaurants, in Apple & Google Wallet.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#fbf5ec; --cream-2:#f3e9da; --ink:#1d1a16; --muted:#6b6257;
+  --tomato:#e2452b; --tomato-2:#ff7a59; --olive:#2f4a3a; --gold:#f2b544;
+  --card:#ffffff; --line:rgba(29,26,22,.12);
+  --radius:22px; --shadow:0 30px 60px -20px rgba(60,30,10,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:Inter,system-ui,sans-serif;background:var(--cream);color:var(--ink);overflow-x:hidden;line-height:1.5}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;letter-spacing:-.02em;line-height:1.05}
+a{color:inherit}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+section{position:relative}
+
+/* audience switching */
+body[data-aud="owner"] [data-only="diner"],
+body[data-aud="diner"] [data-only="owner"]{display:none!important}
+main{transition:opacity .35s ease}
+main.swap{opacity:0}
+
+/* NAV */
+.nav{position:fixed;inset:0 0 auto 0;z-index:50;padding:14px 0;transition:background .3s,box-shadow .3s}
+.nav.scrolled{background:rgba(251,245,236,.85);backdrop-filter:blur(14px);box-shadow:0 1px 0 var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:16px}
+.logo{font-family:Fraunces,serif;font-weight:800;font-size:24px;text-decoration:none;display:flex;align-items:center;gap:8px}
+.logo b{color:var(--tomato)}
+.logo-mark{width:30px;height:30px;border-radius:9px;background:var(--tomato);display:grid;place-items:center;color:#fff;font-size:16px;transform:rotate(-8deg)}
+.seg{margin-left:auto;display:flex;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px;position:relative}
+.seg button{position:relative;z-index:1;padding:8px 16px;border-radius:999px;font-weight:600;font-size:14px;transition:color .3s}
+.seg .pill{position:absolute;top:4px;bottom:4px;border-radius:999px;background:var(--ink);transition:all .4s cubic-bezier(.7,0,.2,1)}
+.seg button.on{color:#fff}
+.lang{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font-weight:700;font-size:14px;display:flex;gap:6px}
+.lang span{opacity:.35;transition:opacity .3s}
+.lang span.on{opacity:1;color:var(--tomato)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:15px 26px;border-radius:999px;font-weight:700;text-decoration:none;transition:transform .2s,box-shadow .2s}
+.btn:hover{transform:translateY(-2px)}
+.btn-main{background:var(--tomato);color:#fff;box-shadow:0 12px 30px -10px var(--tomato)}
+.btn-ghost{border:1.5px solid var(--ink)}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;align-items:center;padding:120px 0 60px;overflow:hidden}
+.blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;animation:float 14s ease-in-out infinite}
+.b1{width:520px;height:520px;background:var(--tomato-2);top:-120px;right:-120px}
+.b2{width:420px;height:420px;background:var(--gold);bottom:-140px;left:-100px;animation-delay:-5s}
+.b3{width:300px;height:300px;background:#9cc5a1;top:40%;left:45%;animation-delay:-9s}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(40px,-30px) scale(1.1)}}
+.floaters span{position:absolute;font-size:34px;opacity:.5;animation:drift linear infinite}
+@keyframes drift{from{transform:translateY(110vh) rotate(0)}to{transform:translateY(-20vh) rotate(360deg)}}
+.hero .wrap{display:grid;grid-template-columns:1.1fr 1fr;gap:60px;align-items:center;position:relative;z-index:2}
+.eyebrow{display:inline-block;font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--tomato);background:#fff;padding:7px 14px;border-radius:999px;border:1px solid var(--line);margin-bottom:22px}
+.hero h1{font-size:clamp(46px,7vw,88px);margin-bottom:22px}
+.hero h1 em{font-style:italic;color:var(--tomato)}
+.hero p.sub{font-size:19px;color:var(--muted);max-width:520px;margin-bottom:32px}
+.ctas{display:flex;gap:14px;flex-wrap:wrap}
+.tilt-wrap{perspective:1200px;display:grid;place-items:center}
+.tilt{transform-style:preserve-3d;transition:transform .15s ease-out;position:relative}
+.tilt .lcard{width:min(400px,86vw);transform:translateZ(40px)}
+.tilt .shine{position:absolute;inset:0;border-radius:var(--radius);background:radial-gradient(circle at var(--mx,50%) var(--my,30%),rgba(255,255,255,.55),transparent 45%);pointer-events:none;transform:translateZ(41px);mix-blend-mode:soft-light}
+.shadow-card{position:absolute;inset:18px -18px -18px 18px;border-radius:var(--radius);background:var(--olive);transform:translateZ(-30px) rotate(4deg);opacity:.9}
+
+/* LOYALTY CARD */
+.lcard{background:var(--bg,#fff);color:var(--fg,#1d1a16);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);position:relative;overflow:hidden;user-select:none}
+.lcard::after{content:"";position:absolute;right:-40px;top:-40px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.12)}
+.lc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.lc-name{font-family:Fraunces,serif;font-weight:700;font-size:22px}
+.lc-kind{font-size:12px;opacity:.75;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.lc-logo{width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,.18);display:grid;place-items:center;font-size:26px}
+.lc-grid{display:grid;gap:10px;margin-bottom:18px}
+.slot{aspect-ratio:1;border-radius:50%;border:2px dashed currentColor;opacity:.9;display:grid;place-items:center;position:relative}
+.slot .st{font-size:clamp(18px,3.4vw,26px);transform:scale(0) rotate(-40deg);transition:transform .45s cubic-bezier(.3,1.8,.5,1);filter:drop-shadow(0 3px 4px rgba(0,0,0,.25))}
+.slot.on{border-style:solid;background:rgba(255,255,255,.22)}
+.slot.on .st{transform:scale(1) rotate(0)}
+.slot.ghost .st{transform:scale(.8);opacity:.18;filter:grayscale(1)}
+.lc-foot{display:flex;justify-content:space-between;font-size:13px;font-weight:600;opacity:.9}
+
+/* generic */
+.sec{padding:120px 0}
+.sec-head{text-align:center;max-width:720px;margin:0 auto 60px}
+.sec-head h2{font-size:clamp(36px,5vw,60px);margin-bottom:16px}
+.sec-head p{font-size:18px;color:var(--muted)}
+.rv{opacity:0;transform:translateY(50px);transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1);transition-delay:var(--d,0s)}
+.rv.in{opacity:1;transform:none}
+.tag{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:5px 12px;border-radius:999px;background:var(--ink);color:#fff;margin-bottom:14px}
+
+/* CAROUSEL */
+.themes{background:var(--ink);color:var(--cream);overflow:hidden}
+.themes .sec-head p{color:#bdb3a6}
+.marquee{display:flex;gap:28px;width:max-content;animation:marq 40s linear infinite;padding:20px 0 40px}
+.marquee:hover{animation-play-state:paused}
+@keyframes marq{to{transform:translateX(-50%)}}
+.marquee .lcard{width:330px;flex:none;transition:transform .4s}
+.marquee .lcard:hover{transform:translateY(-12px) rotate(-2deg) scale(1.03)}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:30px 24px;text-align:center}
+.stat .num{font-family:Fraunces,serif;font-weight:800;font-size:clamp(40px,5vw,58px);color:var(--tomato);line-height:1}
+.stat .lbl{color:var(--muted);margin-top:10px;font-weight:500}
+.note{text-align:center;color:var(--muted);font-size:13px;margin-top:18px}
+
+/* STEPS */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.step{background:#fff;border-radius:var(--radius);padding:34px;border:1px solid var(--line);position:relative;overflow:hidden}
+.step .n{font-family:Fraunces,serif;font-size:90px;font-weight:800;color:var(--cream-2);position:absolute;right:16px;top:-10px}
+.step .ic{font-size:40px;margin-bottom:18px;display:inline-block;animation:bob 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px) rotate(6deg)}}
+.step h3{font-size:26px;margin-bottom:8px;position:relative}
+.step p{color:var(--muted);position:relative}
+
+/* WALLET SCROLL */
+.wallet{height:280vh;background:linear-gradient(var(--cream),#f6dfcf)}
+.wallet-sticky{position:sticky;top:0;height:100vh;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:40px;max-width:1180px;margin:0 auto;padding:80px 20px 20px}
+.wallet-text h2{font-size:clamp(36px,5vw,60px);margin-bottom:16px}
+.wallet-text p{color:var(--muted);font-size:18px;max-width:440px;margin-bottom:30px}
+.fly{width:280px;position:relative;z-index:5;will-change:transform}
+.phone{width:290px;height:590px;border-radius:46px;background:#111;padding:12px;box-shadow:0 40px 80px -20px rgba(0,0,0,.5);position:relative;justify-self:center}
+.phone::before{content:"";position:absolute;top:22px;left:50%;transform:translateX(-50%);width:90px;height:26px;background:#000;border-radius:20px;z-index:3}
+.screen{background:#f2f2f6;height:100%;border-radius:36px;overflow:hidden;padding:60px 14px 14px;position:relative}
+.screen h4{font-family:Inter;font-size:26px;font-weight:700;margin:0 6px 14px}
+.wcard{height:66px;border-radius:14px;margin-bottom:-26px;box-shadow:0 -4px 10px rgba(0,0,0,.08);padding:12px 14px;color:#fff;font-weight:700;font-size:13px;display:flex;justify-content:space-between}
+.wslot{margin-top:40px;height:160px;border:2px dashed #b8b8c4;border-radius:16px;display:grid;place-items:center;color:#8a8a99;font-size:13px;font-weight:600;transition:all .4s}
+.wslot.got{border-color:transparent;color:#2b9a55}
+.progress-label{font-weight:700;color:var(--tomato)}
+
+/* DEMO */
+.demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.demo-phone{width:300px;height:600px;border-radius:46px;background:#111;padding:12px;justify-self:center;box-shadow:var(--shadow);cursor:pointer;transition:transform .15s}
+.demo-phone:active{transform:scale(.97)}
+.demo-phone .screen{display:flex;flex-direction:column;justify-content:center;gap:24px;background:linear-gradient(160deg,#fff,#f6ece2)}
+.demo-phone .lcard{padding:18px}
+.tap-hint{text-align:center;font-weight:700;color:var(--tomato);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.4}}
+.demo-side h2{font-size:clamp(36px,5vw,58px);margin-bottom:16px}
+.demo-side p{color:var(--muted);font-size:18px;margin-bottom:26px}
+.demo-status{font-family:Fraunces,serif;font-size:30px;font-weight:700;margin-bottom:22px;min-height:40px}
+
+/* OWNER FEATURES */
+.feats{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+.feat{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:34px;display:flex;gap:20px;transition:transform .3s,box-shadow .3s}
+.feat:hover{transform:translateY(-6px);box-shadow:var(--shadow)}
+.feat .ic{flex:none;width:58px;height:58px;border-radius:16px;background:var(--cream-2);display:grid;place-items:center;font-size:28px}
+.feat h3{font-size:24px;margin-bottom:6px}
+.feat p{color:var(--muted)}
+
+/* QR */
+.qr-sec{background:var(--olive);color:var(--cream)}
+.qr-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.qr-grid h2{font-size:clamp(36px,5vw,58px);margin-bottom:18px}
+.qr-grid p{color:#cfd9cf;font-size:18px;margin-bottom:26px}
+.qr-box{justify-self:center;background:#fff;padding:26px;border-radius:28px;position:relative;box-shadow:0 30px 60px -20px rgba(0,0,0,.5);perspective:800px}
+#qr{display:block;width:260px;height:260px;transition:transform .6s}
+#qr.flip{transform:rotateY(180deg) scale(.9)}
+.scanline{position:absolute;left:26px;right:26px;height:3px;background:var(--tomato);box-shadow:0 0 18px var(--tomato);top:26px;animation:scan 2.2s ease-in-out infinite alternate}
+@keyframes scan{to{top:calc(100% - 29px)}}
+.timer{display:flex;align-items:center;gap:14px;font-weight:700}
+.ring{width:54px;height:54px}
+.ring circle{fill:none;stroke-width:5}
+.ring .bg{stroke:rgba(255,255,255,.2)}
+.ring .fg{stroke:var(--gold);stroke-linecap:round;transform:rotate(-90deg);transform-origin:center;transition:stroke-dashoffset 1s linear}
+.small{font-size:13px;opacity:.7;font-weight:400}
+
+/* ROI */
+.roi{background:#fff;border:1px solid var(--line);border-radius:32px;padding:44px;display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center}
+.field{margin-bottom:30px}
+.field label{display:flex;justify-content:space-between;font-weight:600;margin-bottom:12px}
+.field label b{color:var(--tomato);font-size:20px}
+input[type=range]{width:100%;accent-color:var(--tomato);height:6px}
+.roi-out{text-align:center;background:var(--cream);border-radius:24px;padding:40px 24px}
+.roi-out .big{font-family:Fraunces,serif;font-size:clamp(46px,6vw,72px);font-weight:800;color:var(--olive);line-height:1;margin:12px 0}
+.roi-out .cmp{color:var(--muted)}
+
+/* PRICING */
+.plans{display:grid;grid-template-columns:1fr;gap:24px;max-width:460px;margin:0 auto}
+.plan{background:#fff;border:1px solid var(--line);border-radius:28px;padding:40px;position:relative}
+.plan.pro{background:var(--ink);color:var(--cream)}
+.plan .badge{position:absolute;top:-14px;right:30px;background:var(--gold);color:var(--ink);font-weight:700;font-size:13px;padding:6px 14px;border-radius:999px}
+.plan h3{font-size:28px}
+.price{font-family:Fraunces,serif;font-size:62px;font-weight:800;margin:14px 0}
+.price small{font-family:Inter;font-size:16px;font-weight:500;opacity:.6}
+.plan ul{list-style:none;margin:20px 0 30px}
+.plan li{padding:9px 0;border-bottom:1px solid var(--line);display:flex;gap:10px}
+.plan.pro li{border-color:rgba(255,255,255,.12)}
+.plan li::before{content:"✓";color:var(--tomato);font-weight:800}
+.plan .btn{width:100%;justify-content:center}
+.plan.pro .btn-ghost{border-color:var(--cream)}
+
+/* CTA */
+.cta-final{background:var(--tomato);color:#fff;text-align:center;overflow:hidden}
+.cta-final h2{font-size:clamp(40px,7vw,86px);margin-bottom:28px}
+.cta-final .btn{background:#fff;color:var(--tomato)}
+.cta-final .ring-deco{position:absolute;border:2px solid rgba(255,255,255,.25);border-radius:50%;animation:spin 30s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+footer{padding:30px 0;text-align:center;color:var(--muted);font-size:14px}
+
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:100}
+
+@media (max-width:860px){
+  .hero .wrap,.demo-grid,.qr-grid,.roi,.wallet-sticky{grid-template-columns:1fr}
+  .hero{padding-top:140px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .steps,.feats,.plans{grid-template-columns:1fr}
+  .plan.pro{transform:none}
+  .seg button{padding:7px 10px;font-size:12px}
+  .logo span.txt{display:none}
+  .wallet-sticky{padding-top:80px;gap:10px;align-content:center}
+  .wallet-text p{display:none}
+  .phone{width:220px;height:420px;border-radius:36px}
+  .fly{width:200px}
+  .roi{padding:26px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .rv{opacity:1;transform:none}
+}
+</style>
+</head>
+<body data-aud="owner">
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a href="#top" class="logo"><span class="logo-mark">✦</span><span class="txt">atable<b>carte</b></span></a>
+    <div class="seg" id="seg">
+      <span class="pill"></span>
+      <button data-aud="owner" data-i18n="nav.owner">For restaurants</button>
+      <button data-aud="diner" data-i18n="nav.diner">For diners</button>
+    </div>
+    <button class="lang" id="lang" aria-label="Language"><span data-l="fr">FR</span>/<span data-l="en">EN</span></button>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- HERO (both) -->
+<section class="hero" id="top">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+  <div class="floaters" id="floaters"></div>
+  <div class="wrap">
+    <div>
+      <span class="eyebrow rv" data-i18n="hero.eyebrow"></span>
+      <h1 class="rv" style="--d:.1s" data-i18n="hero.title"></h1>
+      <p class="sub rv" style="--d:.2s" data-i18n="hero.sub"></p>
+      <div class="ctas rv" style="--d:.3s">
+        <a class="btn btn-main" href="#final" data-i18n="hero.cta"></a>
+        <a class="btn btn-ghost" href="#more" data-i18n="hero.cta2"></a>
+      </div>
+    </div>
+    <div class="tilt-wrap rv" style="--d:.2s" id="tiltWrap">
+      <div class="tilt" id="tilt">
+        <div class="shadow-card"></div>
+        <div id="heroCard"></div>
+        <div class="shine"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CAROUSEL (both) -->
+<section class="sec themes" id="more">
+  <div class="wrap sec-head rv">
+    <h2 data-i18n="themes.title"></h2>
+    <p data-i18n="themes.sub"></p>
+  </div>
+  <div class="marquee" id="marquee"></div>
+</section>
+
+<!-- STATS (both) -->
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head rv"><h2 data-i18n="stats.title"></h2></div>
+    <div class="stats">
+      <div class="stat rv"><div class="num" data-count="48200" data-suffix="+">0</div><div class="lbl" data-i18n="stats.s1"></div></div>
+      <div class="stat rv" style="--d:.1s"><div class="num" data-count="120" data-suffix="+">0</div><div class="lbl" data-i18n="stats.s2"></div></div>
+      <div class="stat rv" style="--d:.2s"><div class="num" data-count="32" data-prefix="+" data-suffix="%">0</div><div class="lbl" data-i18n="stats.s3"></div></div>
+      <div class="stat rv" style="--d:.3s"><div class="num" data-count="2" data-suffix="s">0</div><div class="lbl" data-i18n="stats.s4"></div></div>
+    </div>
+    <p class="note" data-i18n="stats.note"></p>
+  </div>
+</section>
+
+<!-- ===== DINERS ===== -->
+<section class="sec" data-only="diner" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv"><span class="tag" data-i18n="tag.diner"></span><h2 data-i18n="how.title"></h2></div>
+    <div class="steps">
+      <div class="step rv"><span class="n">1</span><span class="ic">📷</span><h3 data-i18n="how.s1t"></h3><p data-i18n="how.s1"></p></div>
+      <div class="step rv" style="--d:.12s"><span class="n">2</span><span class="ic">👆</span><h3 data-i18n="how.s2t"></h3><p data-i18n="how.s2"></p></div>
+      <div class="step rv" style="--d:.24s"><span class="n">3</span><span class="ic">🎁</span><h3 data-i18n="how.s3t"></h3><p data-i18n="how.s3"></p></div>
+    </div>
+  </div>
+</section>
+
+<section class="wallet" data-only="diner" id="wallet">
+  <div class="wallet-sticky">
+    <div>
+      <div class="wallet-text">
+        <h2 data-i18n="wallet.title"></h2>
+        <p data-i18n="wallet.sub"></p>
+      </div>
+      <div class="fly" id="fly"></div>
+    </div>
+    <div class="phone">
+      <div class="screen">
+        <h4>Wallet</h4>
+        <div class="wcard" style="background:#1f6feb">✈ Boarding pass <span>AF 1234</span></div>
+        <div class="wcard" style="background:#6b4fbb">🎬 Cinema <span>Row F</span></div>
+        <div class="wcard" style="background:#2b2b2b">💳 Card <span>•• 4417</span></div>
+        <div class="wslot" id="wslot" data-i18n="wallet.slot"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" data-only="diner">
+  <div class="wrap demo-grid">
+    <div class="demo-side rv">
+      <span class="tag" data-i18n="tag.demo"></span>
+      <h2 data-i18n="demo.title"></h2>
+      <p data-i18n="demo.sub"></p>
+      <div class="demo-status" id="demoStatus"></div>
+      <button class="btn btn-main" id="demoBtn" data-i18n="demo.btn"></button>
+    </div>
+    <div class="demo-phone rv" style="--d:.15s" id="demoPhone">
+      <div class="screen">
+        <div id="demoCard"></div>
+        <div class="tap-hint" data-i18n="demo.hint"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== OWNERS ===== -->
+<section class="sec" data-only="owner" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv"><span class="tag" data-i18n="tag.owner"></span><h2 data-i18n="feat.title"></h2></div>
+    <div class="feats">
+      <div class="feat rv"><div class="ic">📲</div><div><h3 data-i18n="feat.f1t"></h3><p data-i18n="feat.f1"></p></div></div>
+      <div class="feat rv" style="--d:.1s"><div class="ic">🔐</div><div><h3 data-i18n="feat.f2t"></h3><p data-i18n="feat.f2"></p></div></div>
+      <div class="feat rv" style="--d:.2s"><div class="ic">📊</div><div><h3 data-i18n="feat.f3t"></h3><p data-i18n="feat.f3"></p></div></div>
+      <div class="feat rv" style="--d:.3s"><div class="ic">🔔</div><div><h3 data-i18n="feat.f4t"></h3><p data-i18n="feat.f4"></p></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec qr-sec" data-only="owner">
+  <div class="wrap qr-grid">
+    <div class="rv">
+      <h2 data-i18n="qr.title"></h2>
+      <p data-i18n="qr.sub"></p>
+      <div class="timer">
+        <svg class="ring" viewBox="0 0 54 54"><circle class="bg" cx="27" cy="27" r="23"/><circle class="fg" id="ringFg" cx="27" cy="27" r="23"/></svg>
+        <div><span data-i18n="qr.timer"></span> <span id="qrSecs">10</span>s<br><span class="small" data-i18n="qr.note"></span></div>
+      </div>
+    </div>
+    <div class="qr-box rv" style="--d:.15s">
+      <canvas id="qr" width="260" height="260"></canvas>
+      <div class="scanline"></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" data-only="owner">
+  <div class="wrap">
+    <div class="sec-head rv"><h2 data-i18n="roi.title"></h2></div>
+    <div class="roi rv">
+      <div>
+        <div class="field">
+          <label><span data-i18n="roi.customers"></span><b id="custOut">600</b></label>
+          <input type="range" id="cust" min="100" max="4000" step="50" value="600">
+        </div>
+        <div class="field">
+          <label><span data-i18n="roi.ticket"></span><b id="ticketOut">€15</b></label>
+          <input type="range" id="ticket" min="4" max="60" step="1" value="15">
+        </div>
+        <p class="small" style="color:var(--muted)" data-i18n="roi.assume"></p>
+      </div>
+      <div class="roi-out">
+        <div data-i18n="roi.out"></div>
+        <div class="big" id="roiBig">€0</div>
+        <div class="cmp" data-i18n="roi.cost"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" data-only="owner" id="pricing" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv"><h2 data-i18n="price.title"></h2><p data-i18n="price.sub"></p></div>
+    <div class="plans">
+      <div class="plan pro rv">
+        <h3 data-i18n="price.name"></h3>
+        <div class="price">€15<small data-i18n="price.mo"></small></div>
+        <ul data-i18n-list="price.p1"></ul>
+        <a href="#final" class="btn btn-main" data-i18n="price.choose"></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA (both) -->
+<section class="sec cta-final" id="final">
+  <div class="ring-deco" style="width:700px;height:700px;left:-250px;top:-300px;border-style:dashed"></div>
+  <div class="ring-deco" style="width:500px;height:500px;right:-150px;bottom:-250px"></div>
+  <div class="wrap rv" style="position:relative">
+    <h2 data-i18n="cta.title"></h2>
+    <a class="btn" href="mailto:hello@atablecarte.com" data-i18n="cta.btn"></a>
+  </div>
+</section>
+</main>
+
+<footer><span data-i18n="footer"></span></footer>
+<canvas id="confetti"></canvas>
+
+<script>
+/* ---------- TEXT ---------- */
+const DICT = {
+en:{
+ "nav.owner":"For restaurants","nav.diner":"For diners",
+ "hero.eyebrow.owner":"Digital loyalty for independent restaurants",
+ "hero.title.owner":"Turn first visits into <em>regulars.</em>",
+ "hero.sub.owner":"A stamp card that lives in Apple & Google Wallet. No app to download, no paper to lose, no stamps to fake.",
+ "hero.cta.owner":"Start free trial","hero.cta2.owner":"See how it looks",
+ "hero.eyebrow.diner":"All your loyalty cards, one place",
+ "hero.title.diner":"Every coffee <em>counts.</em>",
+ "hero.sub.diner":"Collect stamps at your favourite spots with one tap. Your cards live in your phone's wallet. No app, no paper, no forgetting.",
+ "hero.cta.diner":"Try the demo","hero.cta2.diner":"See the cards",
+ "themes.title":"A card for every craving",
+ "themes.sub":"One pizza per stamp. One coffee per stamp. Every card looks like the place it comes from.",
+ "stats.title":"Small stamps, big habits",
+ "stats.s1":"stamps collected","stats.s2":"restaurants","stats.s3":"more return visits","stats.s4":"to collect a stamp",
+ "stats.note":"Illustrative figures",
+ "tag.diner":"For diners","tag.owner":"For restaurants","tag.demo":"Live demo",
+ "how.title":"Three taps to your next treat",
+ "how.s1t":"Scan","how.s1":"Scan the code at the counter with your phone camera.",
+ "how.s2t":"Collect","how.s2":"One tap adds the stamp. Your card updates instantly.",
+ "how.s3t":"Enjoy","how.s3":"Fill the card and your reward is waiting at the till.",
+ "wallet.title":"Straight into your wallet",
+ "wallet.sub":"Add your card once. It sits next to your boarding passes and updates itself after every stamp. Keep scrolling.",
+ "wallet.slot":"Your card goes here ↓","wallet.got":"✓ Added to Wallet",
+ "demo.title":"Go on, try it","demo.sub":"Tap the phone to collect a stamp. Eight pizzas, and the next one's on the house.",
+ "demo.btn":"Tap to stamp","demo.hint":"Tap anywhere on the phone",
+ "demo.count":"{n} of 8 stamps","demo.done":"Free pizza unlocked! 🎉","demo.reset":"Start a new card",
+ "feat.title":"Built for the way restaurants actually work",
+ "feat.f1t":"No app to download","feat.f1":"Customers add the card to Apple or Google Wallet in seconds. Nothing to install.",
+ "feat.f2t":"Fraud-proof stamps","feat.f2":"A rotating QR code that only works on site. No more photocopied cards.",
+ "feat.f3t":"All your locations, one view","feat.f3":"See visits, stamps and rewards across every location in one dashboard.",
+ "feat.f4t":"Bring them back","feat.f4":"Send a nudge straight to the wallet card when a customer is one stamp away.",
+ "qr.title":"A QR code that can't be copied",
+ "qr.sub":"The code changes every 5 minutes and after each scan, and only works on location. Screenshots and shared photos are useless.",
+ "qr.timer":"New code in","qr.note":"(sped up for this demo)",
+ "roi.title":"What could loyalty bring you?",
+ "roi.customers":"Customers per month","roi.ticket":"Average ticket",
+ "roi.out":"Estimated extra revenue per month","roi.cost":"Atablecarte costs just €15/month",
+ "roi.assume":"Estimate assumes loyalty members return 20% more often.",
+ "price.title":"One price. Everything included.","price.sub":"No tiers, no setup fee. Cancel anytime.","price.name":"Atablecarte","price.mo":"/month",
+ "price.choose":"Get started","price.pop":"Most popular",
+ "price.p1":["Unlimited customers","Unlimited stamps","Apple & Google Wallet","Rotating anti-fraud QR"],
+ "cta.title.owner":"Ready to bring them back?","cta.btn.owner":"Book a demo",
+ "cta.title.diner":"Your next free coffee is waiting.","cta.btn.diner":"Find a restaurant",
+ "footer":"© Atablecarte · Made in Paris",
+ "reward.pizza":"Free pizza","reward.coffee":"Free coffee","reward.tea":"Free bubble tea","reward.bakery":"Free croissant","reward.burger":"Free burger","reward.sushi":"Free plate",
+ "kind.pizza":"Pizzeria","kind.coffee":"Coffee shop","kind.tea":"Bubble tea","kind.bakery":"Bakery","kind.burger":"Burgers","kind.sushi":"Sushi bar"
+},
+fr:{
+ "nav.owner":"Restaurants","nav.diner":"Clients",
+ "hero.eyebrow.owner":"La fidélité digitale des restaurants indépendants",
+ "hero.title.owner":"Transformez les premières visites en <em>habitués.</em>",
+ "hero.sub.owner":"Une carte à tampons dans Apple & Google Wallet. Aucune appli à télécharger, aucun papier perdu, aucun tampon falsifié.",
+ "hero.cta.owner":"Essai gratuit","hero.cta2.owner":"Voir les cartes",
+ "hero.eyebrow.diner":"Toutes vos cartes de fidélité au même endroit",
+ "hero.title.diner":"Chaque café <em>compte.</em>",
+ "hero.sub.diner":"Collectez vos tampons en un geste chez vos adresses préférées. Vos cartes vivent dans le Wallet de votre téléphone. Pas d'appli, pas de papier, pas d'oubli.",
+ "hero.cta.diner":"Essayer la démo","hero.cta2.diner":"Voir les cartes",
+ "themes.title":"Une carte pour chaque envie",
+ "themes.sub":"Une pizza par tampon. Un café par tampon. Chaque carte ressemble à l'adresse qui l'offre.",
+ "stats.title":"Petits tampons, grandes habitudes",
+ "stats.s1":"tampons collectés","stats.s2":"restaurants","stats.s3":"de visites en plus","stats.s4":"pour un tampon",
+ "stats.note":"Chiffres indicatifs",
+ "tag.diner":"Pour les clients","tag.owner":"Pour les restaurants","tag.demo":"Démo interactive",
+ "how.title":"Trois gestes jusqu'à votre prochaine gourmandise",
+ "how.s1t":"Scannez","how.s1":"Scannez le code au comptoir avec l'appareil photo.",
+ "how.s2t":"Collectez","how.s2":"Un geste et le tampon est ajouté. Votre carte se met à jour.",
+ "how.s3t":"Savourez","how.s3":"Carte remplie ? Votre récompense vous attend en caisse.",
+ "wallet.title":"Directement dans votre Wallet",
+ "wallet.sub":"Ajoutez votre carte une fois. Elle se range à côté de vos cartes d'embarquement et se met à jour après chaque tampon. Continuez à défiler.",
+ "wallet.slot":"Votre carte arrive ici ↓","wallet.got":"✓ Ajoutée au Wallet",
+ "demo.title":"Allez-y, essayez","demo.sub":"Touchez le téléphone pour collecter un tampon. Huit pizzas, et la suivante est offerte.",
+ "demo.btn":"Tamponner","demo.hint":"Touchez le téléphone",
+ "demo.count":"{n} tampons sur 8","demo.done":"Pizza offerte débloquée ! 🎉","demo.reset":"Nouvelle carte",
+ "feat.title":"Pensé pour la vraie vie des restaurants",
+ "feat.f1t":"Aucune appli à télécharger","feat.f1":"Vos clients ajoutent la carte à Apple ou Google Wallet en quelques secondes.",
+ "feat.f2t":"Des tampons infalsifiables","feat.f2":"Un QR code tournant qui ne fonctionne que sur place. Fini les cartes photocopiées.",
+ "feat.f3t":"Tous vos établissements, une vue","feat.f3":"Visites, tampons et récompenses de tous vos établissements dans un seul tableau de bord.",
+ "feat.f4t":"Faites-les revenir","feat.f4":"Envoyez un rappel directement sur la carte quand il ne manque qu'un tampon.",
+ "qr.title":"Un QR code impossible à copier",
+ "qr.sub":"Le code change toutes les 5 minutes et après chaque scan, et ne fonctionne que sur place. Captures d'écran et photos partagées sont inutiles.",
+ "qr.timer":"Nouveau code dans","qr.note":"(accéléré pour la démo)",
+ "roi.title":"Que pourrait vous rapporter la fidélité ?",
+ "roi.customers":"Clients par mois","roi.ticket":"Ticket moyen",
+ "roi.out":"Chiffre d'affaires supplémentaire estimé / mois","roi.cost":"Atablecarte, seulement 15 €/mois",
+ "roi.assume":"Estimation basée sur des membres qui reviennent 20 % plus souvent.",
+ "price.title":"Un seul prix. Tout inclus.","price.sub":"Pas de formules, pas de frais d'installation. Sans engagement.","price.name":"Atablecarte","price.mo":"/mois",
+ "price.choose":"Commencer","price.pop":"Le plus choisi",
+ "price.p1":["Clients illimités","Tampons illimités","Apple & Google Wallet","QR code anti-fraude tournant"],
+ "cta.title.owner":"Prêt à les faire revenir ?","cta.btn.owner":"Réserver une démo",
+ "cta.title.diner":"Votre prochain café offert vous attend.","cta.btn.diner":"Trouver un restaurant",
+ "footer":"© Atablecarte · Fait à Paris",
+ "reward.pizza":"Pizza offerte","reward.coffee":"Café offert","reward.tea":"Bubble tea offert","reward.bakery":"Croissant offert","reward.burger":"Burger offert","reward.sushi":"Assiette offerte",
+ "kind.pizza":"Pizzeria","kind.coffee":"Café","kind.tea":"Bubble tea","kind.bakery":"Boulangerie","kind.burger":"Burgers","kind.sushi":"Bar à sushis"
+}};
+
+const THEMES = {
+ pizza:{name:"Pizzeria Nonna",e:"🍕",slots:8,cols:4,bg:"linear-gradient(140deg,#e2452b,#a8261a)",fg:"#fff"},
+ coffee:{name:"Café Lumière",e:"☕",slots:10,cols:5,bg:"linear-gradient(140deg,#5b3a29,#2c1a12)",fg:"#f6e7d4"},
+ tea:{name:"Bubble Lab",e:"🧋",slots:8,cols:4,bg:"linear-gradient(140deg,#f6a6c1,#b06ab3)",fg:"#fff"},
+ bakery:{name:"Boulangerie Soleil",e:"🥐",slots:10,cols:5,bg:"linear-gradient(140deg,#f2c46d,#d98b2b)",fg:"#3b2410"},
+ burger:{name:"Smash Club",e:"🍔",slots:8,cols:4,bg:"linear-gradient(140deg,#2f4a3a,#16261d)",fg:"#f2e6c9"},
+ sushi:{name:"Maki Maki",e:"🍣",slots:10,cols:5,bg:"linear-gradient(140deg,#fefefe,#e9e4dc)",fg:"#1d1a16"}
+};
+
+let lang = 'en', aud = 'owner';
+try{ lang = localStorage.getItem('atc-lang') || (navigator.language||'').startsWith('fr') && 'fr' || 'en'; aud = localStorage.getItem('atc-aud') || 'owner'; }catch(e){}
+
+const tr = k => { const d = DICT[lang]; return d[k+'.'+aud] ?? d[k] ?? k; };
+
+/* ---------- CARD ---------- */
+function cardHTML(key, filled=0){
+  const t = THEMES[key];
+  let slots = '';
+  for(let i=0;i<t.slots;i++) slots += `<span class="slot ${i<filled?'on':'ghost'}"><span class="st">${t.e}</span></span>`;
+  return `<div class="lcard" data-theme="${key}" style="--bg:${t.bg};--fg:${t.fg}">
+    <div class="lc-top"><div><div class="lc-kind">${tr('kind.'+key)}</div><div class="lc-name">${t.name}</div></div><div class="lc-logo">${t.e}</div></div>
+    <div class="lc-grid" style="grid-template-columns:repeat(${t.cols},1fr)">${slots}</div>
+    <div class="lc-foot"><span>🎁 ${tr('reward.'+key)}</span><span class="cnt">${filled}/${t.slots}</span></div></div>`;
+}
+function setFill(cardEl, n){
+  const s = cardEl.querySelectorAll('.slot');
+  s.forEach((el,i)=>{ el.classList.toggle('on', i<n); el.classList.toggle('ghost', i>=n); });
+  cardEl.querySelector('.cnt').textContent = `${n}/${s.length}`;
+}
+
+/* ---------- APPLY LANGUAGE / AUDIENCE ---------- */
+function apply(){
+  document.documentElement.lang = lang;
+  document.body.dataset.aud = aud;
+  document.querySelectorAll('[data-i18n]').forEach(el => el.innerHTML = tr(el.dataset.i18n));
+  document.querySelectorAll('[data-i18n-list]').forEach(el => el.innerHTML = tr(el.dataset.i18nList).map(x=>`<li>${x}</li>`).join(''));
+  document.querySelectorAll('.lang span').forEach(s => s.classList.toggle('on', s.dataset.l===lang));
+  document.querySelectorAll('#seg button').forEach(b => b.classList.toggle('on', b.dataset.aud===aud));
+  movePill();
+  renderCards();
+  updateDemo(false);
+  updateROI();
+  updateWallet();
+  try{ localStorage.setItem('atc-lang',lang); localStorage.setItem('atc-aud',aud);}catch(e){}
+}
+function movePill(){
+  const on = document.querySelector('#seg button.on'), pill = document.querySelector('#seg .pill');
+  if(!on) return; pill.style.left = on.offsetLeft+'px'; pill.style.width = on.offsetWidth+'px';
+}
+document.getElementById('lang').onclick = () => { lang = lang==='en'?'fr':'en'; apply(); };
+document.querySelectorAll('#seg button').forEach(b => b.onclick = () => {
+  if(b.dataset.aud===aud) return;
+  const m = document.getElementById('main'); m.classList.add('swap');
+  aud = b.dataset.aud;
+  document.querySelectorAll('#seg button').forEach(x => x.classList.toggle('on', x===b)); movePill();
+  setTimeout(()=>{ apply(); window.scrollTo({top:0}); m.classList.remove('swap'); observeAll(); },350);
+});
+
+/* ---------- HERO CARD (tilt + auto-fill) ---------- */
+let heroN = 0;
+function renderCards(){
+  document.getElementById('heroCard').innerHTML = cardHTML('coffee', heroN);
+  const keys = Object.keys(THEMES), fills = [5,7,3,8,6,4];
+  const html = keys.map((k,i)=>cardHTML(k,fills[i])).join('');
+  document.getElementById('marquee').innerHTML = html + html;
+  document.getElementById('fly').innerHTML = cardHTML('tea',5);
+  document.getElementById('demoCard').innerHTML = cardHTML('pizza', demoN);
+}
+setInterval(()=>{
+  const c = document.querySelector('#heroCard .lcard'); if(!c) return;
+  heroN = heroN >= 10 ? 0 : heroN+1; setFill(c, heroN);
+}, 700);
+
+const tw = document.getElementById('tiltWrap'), tilt = document.getElementById('tilt');
+tw.addEventListener('mousemove', e=>{
+  const r = tw.getBoundingClientRect(), x = (e.clientX-r.left)/r.width, y = (e.clientY-r.top)/r.height;
+  tilt.style.transform = `rotateY(${(x-.5)*28}deg) rotateX(${(.5-y)*22}deg)`;
+  tilt.style.setProperty('--mx', x*100+'%'); tilt.style.setProperty('--my', y*100+'%');
+});
+tw.addEventListener('mouseleave', ()=> tilt.style.transform='');
+let idle = 0; (function idleTilt(){ idle += .015; if(!tw.matches(':hover')) tilt.style.transform = `rotateY(${Math.sin(idle)*10}deg) rotateX(${Math.cos(idle)*6}deg)`; requestAnimationFrame(idleTilt); })();
+
+/* floating emojis */
+const fl = document.getElementById('floaters');
+['🍕','☕','🧋','🥐','🍔','🍣','🍕','☕'].forEach((e,i)=>{
+  const s = document.createElement('span'); s.textContent = e;
+  s.style.left = (5+i*12)+'%'; s.style.animationDuration = (16+i*3)+'s'; s.style.animationDelay = (-i*4)+'s';
+  fl.appendChild(s);
+});
+
+/* ---------- REVEAL + COUNTERS ---------- */
+const io = new IntersectionObserver(es => es.forEach(en => { if(en.isIntersecting){ en.target.classList.add('in'); if(en.target.dataset.count!==undefined) count(en.target); io.unobserve(en.target);} }), {threshold:.15});
+function observeAll(){ document.querySelectorAll('.rv:not(.in), [data-count]:not(.done)').forEach(el=>io.observe(el)); }
+function count(el){
+  el.classList.add('done');
+  const end = +el.dataset.count, pre = el.dataset.prefix||'', suf = el.dataset.suffix||'', t0 = performance.now(), dur = 1800;
+  (function step(t){ const p = Math.min((t-t0)/dur,1), v = Math.round(end*(1-Math.pow(1-p,3)));
+    el.textContent = pre + v.toLocaleString(lang==='fr'?'fr-FR':'en-GB') + suf; if(p<1) requestAnimationFrame(step); })(t0);
+}
+
+/* ---------- WALLET SCROLL ---------- */
+const fly = document.getElementById('fly'), wslot = document.getElementById('wslot'), walletSec = document.getElementById('wallet');
+function updateWallet(){
+  if(aud!=='diner') return;
+  const r = walletSec.getBoundingClientRect(), total = walletSec.offsetHeight - innerHeight;
+  let p = Math.min(Math.max(-r.top/total,0),1);
+  const e = p<.5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2;
+  fly.style.transform = 'none';
+  const a = fly.getBoundingClientRect(), b = wslot.getBoundingClientRect();
+  const dx = (b.left+b.width/2)-(a.left+a.width/2), dy = (b.top+b.height/2)-(a.top+a.height/2), s = b.width/a.width;
+  fly.style.transform = `translate(${dx*e}px,${dy*e}px) scale(${1+(s-1)*e}) rotate(${(1-e)*-10 + Math.sin(e*Math.PI)*14}deg)`;
+  const got = p > .97; wslot.classList.toggle('got', got);
+  wslot.textContent = got ? '' : tr('wallet.slot');
+}
+
+/* ---------- DEMO ---------- */
+let demoN = 0, demoFull = false;
+function updateDemo(stamp){
+  const c = document.querySelector('#demoCard .lcard'), st = document.getElementById('demoStatus'), btn = document.getElementById('demoBtn');
+  if(stamp){
+    if(demoFull){ demoN = 0; demoFull = false; }
+    else { demoN++; if(demoN>=8){ demoFull = true; confetti(); } }
+  }
+  if(c) setFill(c, demoN);
+  st.textContent = demoFull ? tr('demo.done') : tr('demo.count').replace('{n}', demoN);
+  btn.textContent = demoFull ? tr('demo.reset') : tr('demo.btn');
+}
+document.getElementById('demoBtn').onclick = () => updateDemo(true);
+document.getElementById('demoPhone').onclick = () => updateDemo(true);
+
+/* confetti */
+const cv = document.getElementById('confetti'), cx = cv.getContext('2d'); let parts = [];
+function confetti(){
+  cv.width = innerWidth; cv.height = innerHeight;
+  const cols = ['#e2452b','#f2b544','#2f4a3a','#ff7a59','#9cc5a1','#fff'];
+  for(let i=0;i<180;i++) parts.push({x:innerWidth/2,y:innerHeight*.6,vx:(Math.random()-.5)*18,vy:-Math.random()*18-6,r:Math.random()*7+4,c:cols[i%6],a:Math.random()*6,va:(Math.random()-.5)*.3,emoji:i%12===0?'🍕':null});
+  if(parts.length<=180) loop();
+}
+function loop(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  parts.forEach(p=>{ p.vy+=.45; p.x+=p.vx; p.y+=p.vy; p.vx*=.99; p.a+=p.va;
+    cx.save(); cx.translate(p.x,p.y); cx.rotate(p.a);
+    if(p.emoji){ cx.font='28px serif'; cx.fillText(p.emoji,-14,10);} else { cx.fillStyle=p.c; cx.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);} cx.restore(); });
+  parts = parts.filter(p=>p.y<cv.height+40);
+  if(parts.length) requestAnimationFrame(loop); else cx.clearRect(0,0,cv.width,cv.height);
+}
+
+/* ---------- ROTATING QR (decorative) ---------- */
+const qc = document.getElementById('qr').getContext('2d'), N = 25, M = 260/N;
+function drawQR(){
+  qc.fillStyle='#fff'; qc.fillRect(0,0,260,260); qc.fillStyle='#1d1a16';
+  const finder = (x,y) => { qc.fillRect(x*M,y*M,7*M,7*M); qc.fillStyle='#fff'; qc.fillRect((x+1)*M,(y+1)*M,5*M,5*M); qc.fillStyle='#1d1a16'; qc.fillRect((x+2)*M,(y+2)*M,3*M,3*M); };
+  const inF = (x,y) => (x<8&&y<8)||(x>N-9&&y<8)||(x<8&&y>N-9);
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(!inF(x,y) && Math.random()<.48) qc.fillRect(x*M,y*M,M+.5,M+.5);
+  finder(0,0); finder(N-7,0); finder(0,N-7);
+  qc.fillStyle='#e2452b'; qc.beginPath(); qc.arc(130,130,22,0,7); qc.fill();
+  qc.fillStyle='#fff'; qc.font='bold 20px Fraunces,serif'; qc.textAlign='center'; qc.fillText('✦',130,137);
+}
+drawQR();
+const ring = document.getElementById('ringFg'), C = 2*Math.PI*23; ring.style.strokeDasharray = C;
+let secs = 10;
+setInterval(()=>{
+  secs--; if(secs<=0){ secs = 10; const q = document.getElementById('qr'); q.classList.add('flip'); setTimeout(()=>{ drawQR(); q.classList.remove('flip'); },300); }
+  document.getElementById('qrSecs').textContent = secs;
+  ring.style.strokeDashoffset = C*(1-secs/10);
+},1000);
+
+/* ---------- ROI ---------- */
+function money(v){ return new Intl.NumberFormat(lang==='fr'?'fr-FR':'en-GB',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v); }
+let roiShown = 0;
+function updateROI(){
+  const c = +document.getElementById('cust').value, t = +document.getElementById('ticket').value;
+  document.getElementById('custOut').textContent = c.toLocaleString(lang==='fr'?'fr-FR':'en-GB');
+  document.getElementById('ticketOut').textContent = money(t);
+  const target = c*0.2*t, from = roiShown, t0 = performance.now();
+  (function s(n){ const p = Math.min((n-t0)/500,1); roiShown = from+(target-from)*p; document.getElementById('roiBig').textContent = money(roiShown); if(p<1) requestAnimationFrame(s); })(t0);
+}
+document.getElementById('cust').oninput = updateROI;
+document.getElementById('ticket').oninput = updateROI;
+
+/* ---------- NAV + SCROLL ---------- */
+let ticking = false;
+addEventListener('scroll', ()=>{
+  document.getElementById('nav').classList.toggle('scrolled', scrollY>20);
+  if(!ticking){ ticking = true; requestAnimationFrame(()=>{ updateWallet(); ticking=false; }); }
+},{passive:true});
+addEventListener('resize', ()=>{ movePill(); updateWallet(); });
+
+apply(); observeAll();
+document.fonts && document.fonts.ready.then(movePill);
+</script>
+</body>
